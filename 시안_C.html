@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시안 C · 날짜 달력형</title>
+<style>
+  :root {
+    --bg: #f3f4f6; --surface: #ffffff; --ink: #1f2933; --muted: #6b7280;
+    --line: #e5e7eb; --accent: #2563eb; --accent-soft: #e8efff; --ok: #15803d; --done: #9ca3af;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --surface: #181b21; --ink: #e8eaed; --muted: #9aa0a6;
+      --line: #2a2e36; --accent: #7aa2ff; --accent-soft: #1d2740; --ok: #6fd28f; --done: #5f6368;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+  .phone { max-width: 390px; min-height: 100vh; margin: 0 auto; background: var(--surface);
+    display: flex; flex-direction: column; }
+  @media (min-width: 430px) {
+    body { padding: 24px 0; }
+    .phone { min-height: 780px; border: 1px solid var(--line); border-radius: 28px; overflow: hidden; }
+  }
+  .label { font-size: 11px; color: var(--muted); text-align: center; padding: 8px 0 0; }
+
+  nav { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+  nav a { padding: 14px 0; text-align: center; text-decoration: none; color: var(--muted);
+    font-weight: 600; font-size: 15px; }
+  nav a.on { color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+
+  main { flex: 1; padding: 16px; }
+  .month { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 20px; }
+  .week button { position: relative; padding: 8px 0 10px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--surface); color: var(--ink); cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; font: inherit; }
+  .week .wd { font-size: 12px; color: var(--muted); }
+  .week .dt { font-size: 20px; font-weight: 700; }
+  .week .nth { font-size: 11px; color: var(--muted); }
+  .week .cnt { font-size: 11px; margin-top: 4px; padding: 1px 6px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+  .week .cnt.all { background: var(--ok); color: #fff; }
+  .week .today { position: absolute; top: -8px; font-size: 10px; font-weight: 700; padding: 1px 6px;
+    border-radius: 999px; background: var(--ink); color: var(--surface); }
+  .week button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .week button.on .wd, .week button.on .nth { color: rgba(255,255,255,.85); }
+  .week button.on .cnt { background: rgba(255,255,255,.25); color: #fff; }
+
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  h1 small { font-size: 14px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+
+  ol { list-style: none; margin: 0; padding: 0; position: relative; }
+  ol::before { content: ""; position: absolute; left: 12px; top: 14px; bottom: 14px; width: 2px; background: var(--line); }
+  li { position: relative; display: flex; gap: 14px; padding: 10px 0; }
+  li input { position: relative; z-index: 1; width: 26px; height: 26px; margin: 0; flex: none;
+    accent-color: var(--ok); cursor: pointer; background: var(--surface); }
+  li label { display: block; font-size: 16px; line-height: 1.45; cursor: pointer; padding-top: 2px; }
+  li.done label { color: var(--done); text-decoration: line-through; }
+  .stuck { margin-top: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); color: var(--accent); font-size: 13px; cursor: pointer; }
+  .empty { padding: 20px 16px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted);
+    font-size: 15px; line-height: 1.6; text-align: center; }
+
+  footer { padding: 16px; text-align: center; font-size: 14px; font-weight: 600;
+    background: var(--accent-soft); color: var(--accent); }
+
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: flex-end; justify-content: center; }
+  .sheet.open { display: flex; }
+  .sheet > div { width: 100%; max-width: 390px; background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 16px 28px; }
+  .sheet h2 { margin: 0 0 12px; font-size: 18px; }
+  .sheet dl { margin: 0; display: grid; grid-template-columns: 72px 1fr; gap: 8px; font-size: 15px; }
+  .sheet dt { color: var(--muted); }
+  .sheet dd { margin: 0; }
+  .sheet button { margin-top: 16px; width: 100%; padding: 12px; border: 0; border-radius: 10px;
+    background: var(--accent); color: #fff; font-size: 15px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="label">시안 C · 날짜 달력형 (예시 입사일 2026-11-09 월)</div>
+  <nav><a href="#" class="on">오늘 할 일</a><a href="#">이건 누구에게</a></nav>
+  <main>
+    <div class="month" id="month"></div>
+    <div class="week" id="week"></div>
+    <h1 id="title"></h1>
+    <ol id="list"></ol>
+  </main>
+  <footer>첫 주 질문은 다 물어봐도 돼요</footer>
+</div>
+<div class="sheet" id="sheet"><div>
+  <h2 id="sName"></h2>
+  <dl><dt>담당</dt><dd id="sRole"></dd><dt>위키 위치</dt><dd id="sWiki"></dd><dt>짧은 답</dt><dd id="sAns"></dd></dl>
+  <button id="sClose">닫기</button>
+</div></div>
+
+<script>
+// 03_화면흐름.md 표 1 · 표 2 예시 값
+const TASKS = [
+  { id: 'd1-1', day: 1, order: 1, text: '그룹웨어 첫 로그인 후 비밀번호 바꾸기', topic: 'it-password' },
+  { id: 'd1-2', day: 1, order: 2, text: '그룹웨어 > 근태 > 출근 눌러 보기', topic: 'hr-attendance' },
+  { id: 'd1-3', day: 1, order: 3, text: '메일 서명을 팀 양식으로 맞추기', topic: 'it-mail' },
+  { id: 'd2-1', day: 2, order: 1, text: '필수 교육 두 과정 신청하기', topic: 'hr-training' },
+  { id: 'd3-1', day: 3, order: 1, text: '팀장 결재 받고 법인카드 신청하기', topic: 'ga-card' },
+];
+const TOPICS = {
+  'ga-card':       { name: '법인카드', role: '경영지원 담당', wiki: '총무 > 법인카드', answer: '팀장 결재를 받은 뒤 경영지원 신청서. 보통 사흘' },
+  'it-password':   { name: '비밀번호', role: 'IT 지원 담당', wiki: 'IT > 비밀번호', answer: "그룹웨어 첫 화면 > 내 정보 > 비밀번호. 잊었으면 로그인 화면의 '비밀번호 찾기'" },
+  'it-mail':       { name: '메일', role: '내 사수', wiki: 'IT > 메일', answer: '메일 > 설정 > 서명. 팀 양식은 사수에게' },
+  'hr-attendance': { name: '근태', role: '인사 담당', wiki: '인사 > 근태', answer: '그룹웨어 > 근태 > 출근. 늦을 것 같으면 팀 메신저 방에 먼저 남기고 사유를 적는다' },
+  'hr-training':   { name: '필수 교육', role: '인사 담당', wiki: '인사 > 필수 교육', answer: '입사 한 달 안에 두 과정. 교육 시스템에서 신청' },
+};
+
+// 시안용 가정: 입사일 2026-11-09(월). 실제로는 입사일을 어디서 받을지 정해야 한다.
+const START = new Date(2026, 10, 9);
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+const dateOf = d => new Date(START.getFullYear(), START.getMonth(), START.getDate() + d - 1);
+const now = new Date();
+const todayDay = [1,2,3,4,5].find(d => dateOf(d).toDateString() === now.toDateString());
+
+// 표 3: 다 한 표시는 이 브라우저에만 저장
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+let done = load('firstweek.done', {});
+let day = todayDay ?? load('firstweek.day', 1);
+
+function render() {
+  document.getElementById('month').textContent = `${START.getFullYear()}년 ${START.getMonth() + 1}월 · 첫 주`;
+  document.getElementById('week').innerHTML = [1,2,3,4,5].map(d => {
+    const dt = dateOf(d);
+    const items = TASKS.filter(t => t.day === d);
+    const n = items.filter(t => done[t.id]).length;
+    const cnt = items.length ? `<span class="cnt ${n === items.length ? 'all' : ''}">${n}/${items.length}</span>` : `<span class="cnt">–</span>`;
+    return `<button class="${d === day ? 'on' : ''}" data-day="${d}">
+      ${d === todayDay ? '<span class="today">오늘</span>' : ''}
+      <span class="wd">${WD[dt.getDay()]}</span><span class="dt">${dt.getDate()}</span>
+      <span class="nth">${d}일차</span>${cnt}</button>`;
+  }).join('');
+
+  const dt = dateOf(day);
+  const items = TASKS.filter(t => t.day === day).sort((a, b) => a.order - b.order);
+  const n = items.filter(t => done[t.id]).length;
+  document.getElementById('title').innerHTML =
+    `${dt.getMonth() + 1}월 ${dt.getDate()}일 ${WD[dt.getDay()]}요일 <small>${items.length ? `${items.length}개 중 ${n}개 했어요` : ''}</small>`;
+  document.getElementById('list').innerHTML = items.length ? items.map(t => `
+    <li class="${done[t.id] ? 'done' : ''}">
+      <input type="checkbox" id="${t.id}" ${done[t.id] ? 'checked' : ''}>
+      <div>
+        <label for="${t.id}">${t.text}</label>
+        ${t.topic ? `<button class="stuck" data-topic="${t.topic}">막히면: ${TOPICS[t.topic].name} · ${TOPICS[t.topic].role}</button>` : ''}
+      </div>
+    </li>`).join('')
+    : `<div class="empty">아직 적힌 할 일이 없어요.<br>무엇을 하면 될지 내 사수에게 물어보세요.</div>`;
+}
+
+document.addEventListener('click', e => {
+  const d = e.target.closest('[data-day]');
+  if (d) { day = +d.dataset.day; save('firstweek.day', day); render(); }
+  const tp = e.target.closest('[data-topic]');
+  if (tp) {
+    const t = TOPICS[tp.dataset.topic];
+    sName.textContent = t.name; sRole.textContent = t.role; sWiki.textContent = t.wiki; sAns.textContent = t.answer;
+    sheet.classList.add('open');
+  }
+  if (e.target.id === 'sClose' || e.target.id === 'sheet') sheet.classList.remove('open');
+});
+document.addEventListener('change', e => {
+  if (e.target.type !== 'checkbox') return;
+  if (e.target.checked) done[e.target.id] = new Date().toISOString(); else delete done[e.target.id];
+  save('firstweek.done', done); render();
+});
+render();
+</script>
+</body>
+</html>

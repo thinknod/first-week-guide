@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>첫 주 안내</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="phone">
+  <nav class="menu" aria-label="메뉴">
+    <a href="#/today" data-screen="today">오늘 할 일</a>
+    <a href="#/who" data-screen="who">이건 누구에게</a>
+  </nav>
+  <main id="today" aria-labelledby="title">
+    <div class="days" id="days" role="group" aria-label="입사 일차 고르기"></div>
+    <div class="head">
+      <h1 id="title">1일차</h1>
+      <div class="dots" id="dots" aria-live="polite"></div>
+    </div>
+    <div id="cards"></div>
+  </main>
+  <main id="who" aria-labelledby="whoTitle" hidden>
+    <div class="head">
+      <h1 id="whoTitle" tabindex="-1">이건 누구에게</h1>
+      <div class="dots" id="whoCount" aria-live="polite"></div>
+    </div>
+    <input class="filter" id="filter" type="search" aria-label="주제 거르기"
+           placeholder="거르기 (예: 카드, 휴가)" autocomplete="off">
+    <div id="groups"></div>
+  </main>
+  <main id="topic" aria-labelledby="topicTitle" hidden>
+    <button type="button" class="back" id="back">← 뒤로</button>
+    <div class="num" id="topicGroup"></div>
+    <h1 id="topicTitle" tabindex="-1"></h1>
+    <dl class="info" id="topicInfo"></dl>
+    <h2 class="sub" id="topicTasksTitle">이 주제를 쓰는 할 일</h2>
+    <div id="topicTasks"></div>
+  </main>
+  <footer>첫 주 질문은 다 물어봐도 돼요</footer>
+</div>
+<script src="content.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
