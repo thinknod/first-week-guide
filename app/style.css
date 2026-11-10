@@ -55,21 +55,25 @@ button { font-family: inherit; }
 
 main { flex: 1; padding: 8px 16px 16px; background: var(--bg); }
 
-/* 일차 칩 */
-.days { display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px 12px; margin: 0 -2px; }
+/* 일차 칩: 1~5일차가 밀지 않아도 한 줄에 다 보이게 (05_사용자시험 사람 2) */
+.days {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); /* 글자를 키우면 줄을 바꾼다 */
+  gap: 8px;
+  padding: 8px 0 12px;
+}
 .days button {
-  flex: none;
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 0;
+  min-height: 48px;
+  padding: 10px 4px;
+  border: 1px solid var(--muted);
   border-radius: 999px;
   background: var(--card);
   color: var(--ink);
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   box-shadow: var(--shadow);
 }
-.days button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.days button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 
 /* 제목 + 진행 */
 .head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
@@ -106,7 +110,31 @@ h1 { font-size: 22px; margin: 0; }
   font-weight: 600;
   cursor: pointer;
 }
-.card.done .doneBtn { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+/* 다 함: 표시(누를 수 없음)와 되돌리기(작은 글자 단추)를 나눈다 */
+.doneRow { display: flex; align-items: center; gap: 8px; }
+.doneMark {
+  flex: 1;
+  margin: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+.undoBtn {
+  flex: none;
+  min-height: 44px;
+  padding: 10px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 /* 빈 상태 */
 .empty {

@@ -71,20 +71,27 @@
       return;
     }
 
+    // 표시하기와 되돌리기를 다른 자리에 둔다. 한 단추였을 때 두 번 눌러 표시를 지운 사람이 있었다(05_사용자시험 사람 3).
     $cards.replaceChildren(...items.map((t, i) => {
       const isDone = Boolean(done[t.id]);
-      const btn = el('button', {
-        type: 'button',
-        className: 'doneBtn',
-        textContent: isDone ? '✓ 다 했어요 · 되돌리기' : '다 했어요',
-      });
-      btn.dataset.done = t.id;
-      btn.setAttribute('aria-pressed', String(isDone));
-      btn.setAttribute('aria-label', `${t.text}: ${isDone ? '다 했음, 누르면 되돌리기' : '다 했어요 표시하기'}`);
+      let action;
+      if (isDone) {
+        const undo = el('button', { type: 'button', className: 'undoBtn', textContent: '되돌리기' });
+        undo.dataset.undo = t.id;
+        undo.setAttribute('aria-label', `${t.text}: 다 한 표시 되돌리기`);
+        action = el('div', { className: 'doneRow' }, [
+          el('p', { className: 'doneMark', textContent: '✓ 다 했어요' }),
+          undo,
+        ]);
+      } else {
+        action = el('button', { type: 'button', className: 'doneBtn', textContent: '다 했어요' });
+        action.dataset.done = t.id;
+        action.setAttribute('aria-label', `${t.text}: 다 했어요 표시하기`);
+      }
       return el('article', { className: 'card' + (isDone ? ' done' : '') }, [
         el('div', { className: 'num', textContent: `할 일 ${t.order || i + 1}` }),
         el('p', { className: 'text', textContent: t.text }),
-        btn,
+        action,
       ]);
     }));
   }
@@ -101,14 +108,31 @@
     if (again) again.focus();
   });
 
+  // 표시한 직후에는 되돌리기가 먹지 않는다 (빠르게 두 번 눌러도 표시가 남게).
+  const UNDO_WAIT_MS = 1500;
+  const markedAt = {};
+
   $cards.addEventListener('click', e => {
-    const b = e.target.closest('[data-done]');
-    if (!b) return;
-    const id = b.dataset.done;
-    if (done[id]) delete done[id]; else done[id] = stamp(new Date());
+    const mark = e.target.closest('[data-done]');
+    const undo = e.target.closest('[data-undo]');
+    let id;
+    let focusSel;
+    if (mark) {
+      id = mark.dataset.done;
+      done[id] = stamp(new Date());
+      markedAt[id] = Date.now();
+      focusSel = `[data-undo="${CSS.escape(id)}"]`;
+    } else if (undo) {
+      id = undo.dataset.undo;
+      if (Date.now() - (markedAt[id] || 0) < UNDO_WAIT_MS) return;
+      delete done[id];
+      focusSel = `[data-done="${CSS.escape(id)}"]`;
+    } else {
+      return;
+    }
     save(KEY_DONE, done);
     renderList();
-    const again = $cards.querySelector(`[data-done="${CSS.escape(id)}"]`);
+    const again = $cards.querySelector(focusSel);
     if (again) again.focus();
   });
 
@@ -156,7 +180,7 @@
 
   // 띄어쓰기와 대소문자는 따지지 않는다 ('법인 카드', 'it' 도 찾게).
   const norm = s => String(s || '').toLowerCase().replace(/\s+/g, '');
-  const hay = t => norm([t.name, t.group, t.role, t.wiki, ...(t.questions || [])].join(' '));
+  const hay = t => norm([t.name, t.group, t.role, t.wiki, ...(t.questions || []), ...(t.words || [])].join(' '));
 
   /* ---------- 화면 ② ---------- */
   function renderWho() {
